@@ -23,6 +23,16 @@ impl Sub for V3 {
     }
 }
 
+impl Mul for V3 {
+    type Output = V3;
+
+    fn mul(self, rhs: V3) -> Self::Output {
+        let V3([x1, y1, z1]) = self;
+        let V3([x2, y2, z2]) = rhs;
+        V3([x1 * x2, y1 * y2, z1 * z2])
+    }
+}
+
 impl Mul<f64> for V3 {
     type Output = V3;
 
@@ -60,5 +70,11 @@ impl V3 {
     pub fn map(self, f: fn(f64) -> f64) -> V3 {
         let V3([x, y, z]) = self;
         V3([f(x), f(y), f(z)])
+    }
+
+    pub fn is_near_zero(self) -> bool {
+        let eps = 1e-8;
+        let V3([x, y, z]) = self;
+        x.abs() < eps && y.abs() < eps && z.abs() < eps
     }
 }

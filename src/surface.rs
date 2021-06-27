@@ -1,14 +1,16 @@
+use crate::material::Material;
 use crate::ray::Ray;
 use crate::v3::V3;
 
 #[derive(Clone, Copy)]
-pub struct RayHit {
+pub struct RayHit<'m> {
     pub position: V3,
     pub normal: V3,
     pub t: f64,
+    pub material: &'m dyn Material,
 }
 
-pub trait Surface {
+pub trait Surface: Send + Sync {
     fn hit(&self, ray: Ray, t_min: f64, t_max: f64) -> Option<RayHit>;
 }
 
@@ -28,12 +30,13 @@ impl<T: Surface + ?Sized> Surface for Vec<Box<T>> {
 }
 
 #[derive(Clone, Copy)]
-pub struct Sphere {
+pub struct Sphere<'m> {
     pub center: V3,
     pub radius: f64,
+    pub material: &'m dyn Material,
 }
 
-impl Surface for Sphere {
+impl Surface for Sphere<'_> {
     fn hit(&self, ray: Ray, t_min: f64, t_max: f64) -> Option<RayHit> {
         let center = ray.origin - self.center;
         let a = ray.direction.length_squared();
@@ -57,6 +60,7 @@ impl Surface for Sphere {
                     position,
                     normal,
                     t,
+                    material: self.material,
                 })
             }
         } else {

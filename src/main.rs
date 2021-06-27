@@ -1,16 +1,18 @@
 mod camera;
+mod material;
 mod ray;
 mod surface;
+mod util;
 mod v3;
 
 use std::sync::Mutex;
 
 use crate::camera::Camera;
+use crate::material::{Diffuse, Reflective};
 use crate::ray::Ray;
 use crate::surface::{Sphere, Surface};
 use crate::v3::V3;
-use rand::{thread_rng, Rng};
-use rand_distr::{Distribution, Normal};
+use rand::Rng;
 use rayon::prelude::*;
 
 fn main() {
@@ -21,14 +23,41 @@ fn main() {
 
     let camera = Camera::new(WIDTH as i32, HEIGHT as i32);
 
-    let scene: Vec<Box<dyn Surface + Send + Sync>> = vec![
+    let red = Diffuse {
+        color: V3([0.8, 0.5, 0.5]),
+    };
+    let gray = Diffuse {
+        color: V3([0.5, 0.5, 0.5]),
+    };
+    let left = Reflective {
+        color: V3([0.8, 0.8, 0.8]),
+        fuzz: 0.05,
+    };
+    let right = Reflective {
+        color: V3([0.8, 0.6, 0.2]),
+        fuzz: 0.6,
+    };
+
+    let scene: Vec<Box<dyn Surface>> = vec![
         Box::new(Sphere {
             center: V3([0.0, 0.0, -1.0]),
             radius: 0.5,
+            material: &red,
         }),
         Box::new(Sphere {
             center: V3([0.0, -100.5, -1.0]),
             radius: 100.0,
+            material: &gray,
+        }),
+        Box::new(Sphere {
+            center: V3([-1.0, 0.0, -1.0]),
+            radius: 0.5,
+            material: &left,
+        }),
+        Box::new(Sphere {
+            center: V3([1.0, 0.0, -1.0]),
+            radius: 0.5,
+            material: &right,
         }),
     ];
 
@@ -63,14 +92,12 @@ const T_MIN: f64 = 0.00001;
 fn ray_color(ray: Ray, scene: &dyn Surface, depth: i32) -> Color {
     if depth > 0 {
         match scene.hit(ray, T_MIN, f64::INFINITY) {
-            Some(hit) => {
-                let child_ray = Ray {
-                    origin: hit.position,
-                    direction: hit.normal + random_unit_vector(),
-                };
-                let child_color = ray_color(child_ray, scene, depth - 1);
-                child_color * 0.5
-            }
+            Some(hit) => match hit.material.scatter(ray, hit.position, hit.normal) {
+                Some(scattered_ray) => {
+                    scattered_ray.attenuation * ray_color(scattered_ray.ray, scene, depth - 1)
+                }
+                None => V3::ZERO,
+            },
             None => sky_color(ray),
         }
     } else {
@@ -82,17 +109,6 @@ fn sky_color(ray: Ray) -> Color {
     let unit_direction = ray.direction.normalize();
     let t = 0.5 * (unit_direction.y() + 1.0);
     WHITE * (1.0 - t) + BLUE * t
-}
-
-fn random_unit_vector() -> V3 {
-    let normal = Normal::new(0.0, 1.0).unwrap();
-    let mut rng = thread_rng();
-    let v = V3([
-        normal.sample(&mut rng),
-        normal.sample(&mut rng),
-        normal.sample(&mut rng),
-    ]);
-    v.normalize()
 }
 
 fn print_ppm(width: usize, height: usize, pixels: &[Color]) -> () {
