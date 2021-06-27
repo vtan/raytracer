@@ -3,8 +3,6 @@ use std::ops::{Add, Mul, Sub};
 #[derive(Clone, Copy)]
 pub struct V3(pub [f64; 3]);
 
-pub const ZERO: V3 = V3([0.0, 0.0, 0.0]);
-
 impl Add for V3 {
     type Output = V3;
 
@@ -35,6 +33,8 @@ impl Mul<f64> for V3 {
 }
 
 impl V3 {
+    pub const ZERO: V3 = V3([0.0, 0.0, 0.0]);
+
     pub fn y(self) -> f64 {
         self.0[1]
     }

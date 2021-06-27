@@ -12,7 +12,7 @@ pub trait Surface {
     fn hit(&self, ray: Ray, t_min: f64, t_max: f64) -> Option<RayHit>;
 }
 
-impl Surface for Vec<Box<dyn Surface>> {
+impl<T: Surface + ?Sized> Surface for Vec<Box<T>> {
     fn hit(&self, ray: Ray, t_min: f64, t_max: f64) -> Option<RayHit> {
         let mut nearest_hit: Option<RayHit> = None;
 
@@ -53,7 +53,11 @@ impl Surface for Sphere {
                 let t = root;
                 let position = ray.at(t);
                 let normal = (position - self.center) * (1.0 / self.radius);
-                Some(RayHit { position, normal, t })
+                Some(RayHit {
+                    position,
+                    normal,
+                    t,
+                })
             }
         } else {
             None

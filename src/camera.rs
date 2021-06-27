@@ -16,7 +16,7 @@ impl Camera {
         let viewport_height = 2.0;
         let viewport_width = aspect_ratio * viewport_height;
 
-        let origin = crate::v3::ZERO;
+        let origin = V3::ZERO;
         let focal_length = 1.0;
         let horizontal_extent = V3([viewport_width, 0.0, 0.0]);
         let vertical_extent = V3([0.0, viewport_height, 0.0]);
