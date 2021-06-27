@@ -5,6 +5,9 @@ mod surface;
 mod util;
 mod v3;
 
+use std::fs::File;
+use std::io::BufWriter;
+use std::path::Path;
 use std::sync::Mutex;
 
 use crate::camera::Camera;
@@ -12,6 +15,7 @@ use crate::material::{Diffuse, Reflective};
 use crate::ray::Ray;
 use crate::surface::{Sphere, Surface};
 use crate::v3::V3;
+use png::HasParameters;
 use rand::Rng;
 use rayon::prelude::*;
 
@@ -81,7 +85,7 @@ fn main() {
     });
 
     let pixels = pixels_shared.get_mut().unwrap();
-    print_ppm(WIDTH, HEIGHT, pixels);
+    write_png(Path::new("output.png"), WIDTH, HEIGHT, pixels);
 }
 
 type Color = V3;
@@ -111,18 +115,23 @@ fn sky_color(ray: Ray) -> Color {
     WHITE * (1.0 - t) + BLUE * t
 }
 
-fn print_ppm(width: usize, height: usize, pixels: &[Color]) -> () {
-    fn to_byte(pixel: f64) -> u8 {
-        ((256.0 * pixel) as i32).clamp(0, 255) as u8
-    }
-    println!("P3");
-    println!("{} {}", width, height);
-    println!("255");
-    for row in pixels.chunks(width) {
-        for &pixel in row {
-            let V3([r, g, b]) = pixel;
-            print!("{} {} {} ", to_byte(r), to_byte(g), to_byte(b));
-        }
-        println!();
-    }
+fn write_png(path: &Path, width: usize, height: usize, pixels: &[Color]) -> () {
+    let bytes: Vec<u8> = pixels
+        .iter()
+        .flat_map(|color| {
+            let V3(components) = color;
+            components
+                .iter()
+                .map(|&pixel| ((256.0 * pixel) as i32).clamp(0, 255) as u8)
+        })
+        .collect();
+    let file = File::create(path).unwrap();
+    let writer = BufWriter::new(file);
+    let mut encoder = png::Encoder::new(writer, width as u32, height as u32);
+    encoder.set(png::ColorType::RGB).set(png::BitDepth::Eight);
+    encoder
+        .write_header()
+        .unwrap()
+        .write_image_data(&bytes)
+        .unwrap();
 }
