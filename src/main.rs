@@ -4,7 +4,7 @@ mod surface;
 mod v3;
 
 use camera::Camera;
-use rand::Rng;
+use rand::{thread_rng, Rng};
 use ray::Ray;
 use surface::{Sphere, Surface};
 use v3::V3;
@@ -12,7 +12,8 @@ use v3::V3;
 fn main() {
     const WIDTH: usize = 1280;
     const HEIGHT: usize = 720;
-    const SAMPLES_PER_PIXEL: usize = 16;
+    const SAMPLES_PER_PIXEL: usize = 64;
+    const MAX_DEPTH: i32 = 16;
 
     let camera = Camera::new(WIDTH as i32, HEIGHT as i32);
 
@@ -38,9 +39,10 @@ fn main() {
                 let y = screen_y as f64 + rng.gen::<f64>();
 
                 let ray = camera.ray_from(x, y);
-                color = color + ray_color(ray, &scene);
+                color = color + ray_color(ray, &scene, MAX_DEPTH);
             }
-            pixels[screen_x + screen_y * WIDTH] = color * (1.0 / (SAMPLES_PER_PIXEL as f64))
+            pixels[screen_x + screen_y * WIDTH] =
+                color.map(|x| (x / (SAMPLES_PER_PIXEL as f64)).sqrt())
         }
     }
 
@@ -50,11 +52,23 @@ fn main() {
 type Color = V3;
 const WHITE: Color = V3([1.0, 1.0, 1.0]);
 const BLUE: Color = V3([0.5, 0.7, 1.0]);
+const T_MIN: f64 = 0.001;
 
-fn ray_color(ray: Ray, scene: &dyn Surface) -> Color {
-    match scene.hit(ray, 0.0, f64::INFINITY) {
-        Some(hit) => (hit.normal + WHITE) * 0.5,
-        None => sky_color(ray),
+fn ray_color(ray: Ray, scene: &dyn Surface, depth: i32) -> Color {
+    if depth > 0 {
+        match scene.hit(ray, T_MIN, f64::INFINITY) {
+            Some(hit) => {
+                let child_ray = Ray {
+                    origin: hit.position,
+                    direction: hit.normal + random_unit_vector()
+                };
+                let child_color = ray_color(child_ray, scene, depth - 1);
+                child_color * 0.5
+            }
+            None => sky_color(ray),
+        }
+    } else {
+        v3::ZERO
     }
 }
 
@@ -62,6 +76,24 @@ fn sky_color(ray: Ray) -> Color {
     let unit_direction = ray.direction.normalize();
     let t = 0.5 * (unit_direction.y() + 1.0);
     WHITE * (1.0 - t) + BLUE * t
+}
+
+fn random_unit_vector() -> V3 {
+    random_in_unit_sphere().normalize()
+}
+
+fn random_in_unit_sphere() -> V3 {
+    let mut rng = thread_rng();
+    loop {
+        let candidate = V3([
+            rng.gen_range(-1.0..=1.0),
+            rng.gen_range(-1.0..=1.0),
+            rng.gen_range(-1.0..=1.0),
+        ]);
+        if candidate.length_squared() < 1.0 {
+            return candidate;
+        }
+    }
 }
 
 fn print_ppm(width: usize, height: usize, pixels: &[Color]) -> () {

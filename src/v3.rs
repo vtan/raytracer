@@ -56,4 +56,9 @@ impl V3 {
     pub fn normalize(self) -> V3 {
         self * (1.0 / self.length())
     }
+
+    pub fn map(self, f: fn(f64) -> f64) -> V3 {
+        let V3([x, y, z]) = self;
+        V3([f(x), f(y), f(z)])
+    }
 }

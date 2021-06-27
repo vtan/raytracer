@@ -3,7 +3,7 @@ use crate::v3::V3;
 
 #[derive(Clone, Copy)]
 pub struct RayHit {
-    pub hit: V3,
+    pub position: V3,
     pub normal: V3,
     pub t: f64,
 }
@@ -51,9 +51,9 @@ impl Surface for Sphere {
                 None
             } else {
                 let t = root;
-                let hit = ray.at(t);
-                let normal = (hit - self.center) * (1.0 / self.radius);
-                Some(RayHit { hit, normal, t })
+                let position = ray.at(t);
+                let normal = (position - self.center) * (1.0 / self.radius);
+                Some(RayHit { position, normal, t })
             }
         } else {
             None
