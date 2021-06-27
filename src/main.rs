@@ -5,6 +5,7 @@ mod v3;
 
 use camera::Camera;
 use rand::{thread_rng, Rng};
+use rand_distr::{Distribution, Normal};
 use ray::Ray;
 use surface::{Sphere, Surface};
 use v3::V3;
@@ -60,7 +61,7 @@ fn ray_color(ray: Ray, scene: &dyn Surface, depth: i32) -> Color {
             Some(hit) => {
                 let child_ray = Ray {
                     origin: hit.position,
-                    direction: hit.normal + random_unit_vector()
+                    direction: hit.normal + random_unit_vector(),
                 };
                 let child_color = ray_color(child_ray, scene, depth - 1);
                 child_color * 0.5
@@ -79,21 +80,14 @@ fn sky_color(ray: Ray) -> Color {
 }
 
 fn random_unit_vector() -> V3 {
-    random_in_unit_sphere().normalize()
-}
-
-fn random_in_unit_sphere() -> V3 {
+    let normal = Normal::new(0.0, 1.0).unwrap();
     let mut rng = thread_rng();
-    loop {
-        let candidate = V3([
-            rng.gen_range(-1.0..=1.0),
-            rng.gen_range(-1.0..=1.0),
-            rng.gen_range(-1.0..=1.0),
-        ]);
-        if candidate.length_squared() < 1.0 {
-            return candidate;
-        }
-    }
+    let v = V3([
+        normal.sample(&mut rng),
+        normal.sample(&mut rng),
+        normal.sample(&mut rng),
+    ]);
+    v.normalize()
 }
 
 fn print_ppm(width: usize, height: usize, pixels: &[Color]) -> () {
