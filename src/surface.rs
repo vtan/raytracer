@@ -28,14 +28,13 @@ impl<T: Surface + ?Sized> Surface for Vec<Box<T>> {
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct Sphere<'m> {
+pub struct Sphere {
     pub center: V3,
     pub radius: f64,
-    pub material: &'m dyn Material,
+    pub material: Box<dyn Material>,
 }
 
-impl Surface for Sphere<'_> {
+impl Surface for Sphere {
     fn hit(&self, ray: Ray, t_min: f64, t_max: f64) -> Option<RayHitMaterial> {
         let center = ray.origin - self.center;
         let a = ray.direction.length_squared();
@@ -67,7 +66,7 @@ impl Surface for Sphere<'_> {
                         t,
                         on_front_face,
                     },
-                    material: self.material,
+                    material: &(*self.material),
                 })
             }
         } else {

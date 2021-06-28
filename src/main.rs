@@ -2,6 +2,7 @@ mod camera;
 mod material;
 mod ray;
 mod ray_hit;
+mod scene;
 mod surface;
 mod util;
 mod v3;
@@ -13,9 +14,9 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use crate::camera::{Camera, CameraOptions};
-use crate::material::{Diffuse, Reflective, Refractive};
 use crate::ray::Ray;
-use crate::surface::{Sphere, Surface};
+use crate::scene::make_scene;
+use crate::surface::Surface;
 use crate::v3::V3;
 use png::HasParameters;
 use rand::Rng;
@@ -24,62 +25,19 @@ use rayon::prelude::*;
 fn main() {
     const WIDTH: usize = 1280;
     const HEIGHT: usize = 720;
-    const SAMPLES_PER_PIXEL: usize = 128;
+    const SAMPLES_PER_PIXEL: usize = 32;
     const MAX_DEPTH: i32 = 32;
 
     let camera = Camera::new(CameraOptions {
         screen_width: WIDTH as i32,
         screen_height: HEIGHT as i32,
-        look_from: V3([-2.0, 2.0, 1.0]),
-        look_at: V3([0.0, 0.0, -1.0]),
+        look_from: V3([13.0, 2.0, 3.0]),
+        look_at: V3([0.0, 0.0, 0.0]),
         vertical_field_of_view: PI / 6.0,
-        aperture: 0.5,
-        focus_distance: None,
+        aperture: 0.1,
+        focus_distance: Some(10.0),
     });
-
-    let red = Diffuse {
-        color: V3([0.8, 0.5, 0.5]),
-    };
-    let gray = Diffuse {
-        color: V3([0.5, 0.5, 0.5]),
-    };
-    let mirror = Reflective {
-        color: V3([0.8, 0.8, 0.8]),
-        fuzz: 0.03,
-    };
-    let gold = Reflective {
-        color: V3([0.8, 0.6, 0.2]),
-        fuzz: 0.6,
-    };
-    let glass = Refractive { ratio: 1.5 };
-
-    let scene: Vec<Box<dyn Surface>> = vec![
-        Box::new(Sphere {
-            center: V3([0.0, 0.0, -1.0]),
-            radius: 0.5,
-            material: &red,
-        }),
-        Box::new(Sphere {
-            center: V3([0.0, -100.5, -1.0]),
-            radius: 100.0,
-            material: &gray,
-        }),
-        Box::new(Sphere {
-            center: V3([-1.0, 0.0, -1.0]),
-            radius: 0.5,
-            material: &glass,
-        }),
-        Box::new(Sphere {
-            center: V3([1.0, 0.0, -1.0]),
-            radius: 0.5,
-            material: &gold,
-        }),
-        Box::new(Sphere {
-            center: V3([0.0, 1.0, -5.0]),
-            radius: 3.0,
-            material: &mirror,
-        }),
-    ];
+    let scene = make_scene();
 
     let mut pixels_shared = Mutex::new(vec![V3::ZERO; WIDTH * HEIGHT]);
 
@@ -93,7 +51,7 @@ fn main() {
             let x = screen_x as f64 + rng.gen::<f64>();
             let y = screen_y as f64 + rng.gen::<f64>();
             let ray = camera.ray_from(x, y);
-            color = color + ray_color(ray, &scene, MAX_DEPTH);
+            color = color + ray_color(ray, &(*scene), MAX_DEPTH);
         }
 
         let mut pixels = pixels_shared.lock().unwrap();
