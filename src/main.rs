@@ -1,6 +1,7 @@
 mod camera;
 mod material;
 mod ray;
+mod ray_hit;
 mod surface;
 mod util;
 mod v3;
@@ -11,7 +12,7 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use crate::camera::Camera;
-use crate::material::{Diffuse, Reflective};
+use crate::material::{Diffuse, Reflective, Refractive};
 use crate::ray::Ray;
 use crate::surface::{Sphere, Surface};
 use crate::v3::V3;
@@ -35,12 +36,13 @@ fn main() {
     };
     let left = Reflective {
         color: V3([0.8, 0.8, 0.8]),
-        fuzz: 0.05,
+        fuzz: 0.03,
     };
     let right = Reflective {
         color: V3([0.8, 0.6, 0.2]),
         fuzz: 0.6,
     };
+    let glass = Refractive { ratio: 1.5 };
 
     let scene: Vec<Box<dyn Surface>> = vec![
         Box::new(Sphere {
@@ -62,6 +64,11 @@ fn main() {
             center: V3([1.0, 0.0, -1.0]),
             radius: 0.5,
             material: &right,
+        }),
+        Box::new(Sphere {
+            center: V3([0.0, 1.0, -5.0]),
+            radius: 3.0,
+            material: &glass,
         }),
     ];
 
@@ -96,7 +103,7 @@ const T_MIN: f64 = 0.00001;
 fn ray_color(ray: Ray, scene: &dyn Surface, depth: i32) -> Color {
     if depth > 0 {
         match scene.hit(ray, T_MIN, f64::INFINITY) {
-            Some(hit) => match hit.material.scatter(ray, hit.position, hit.normal) {
+            Some(result) => match result.material.scatter(ray, result.hit) {
                 Some(scattered_ray) => {
                     scattered_ray.attenuation * ray_color(scattered_ray.ray, scene, depth - 1)
                 }

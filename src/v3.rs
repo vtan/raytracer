@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Mul, Neg, Sub};
 
 #[derive(Clone, Copy)]
 pub struct V3(pub [f64; 3]);
@@ -23,6 +23,15 @@ impl Sub for V3 {
     }
 }
 
+impl Neg for V3 {
+    type Output = V3;
+
+    fn neg(self) -> V3 {
+        let V3([x, y, z]) = self;
+        V3([-x, -y, -z])
+    }
+}
+
 impl Mul for V3 {
     type Output = V3;
 
@@ -39,6 +48,15 @@ impl Mul<f64> for V3 {
     fn mul(self, a: f64) -> V3 {
         let V3([x, y, z]) = self;
         V3([a * x, a * y, a * z])
+    }
+}
+
+impl Mul<V3> for f64 {
+    type Output = V3;
+
+    fn mul(self, rhs: V3) -> V3 {
+        let V3([x, y, z]) = rhs;
+        V3([self * x, self * y, self * z])
     }
 }
 
@@ -76,5 +94,9 @@ impl V3 {
         let eps = 1e-8;
         let V3([x, y, z]) = self;
         x.abs() < eps && y.abs() < eps && z.abs() < eps
+    }
+
+    pub fn reflect(self, normal: V3) -> V3 {
+        self - normal * (self.dot(normal) * 2.0)
     }
 }
