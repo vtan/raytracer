@@ -6,12 +6,13 @@ mod surface;
 mod util;
 mod v3;
 
+use std::f64::consts::PI;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
 use std::sync::Mutex;
 
-use crate::camera::Camera;
+use crate::camera::{Camera, CameraOptions};
 use crate::material::{Diffuse, Reflective, Refractive};
 use crate::ray::Ray;
 use crate::surface::{Sphere, Surface};
@@ -23,10 +24,18 @@ use rayon::prelude::*;
 fn main() {
     const WIDTH: usize = 1280;
     const HEIGHT: usize = 720;
-    const SAMPLES_PER_PIXEL: usize = 64;
+    const SAMPLES_PER_PIXEL: usize = 128;
     const MAX_DEPTH: i32 = 32;
 
-    let camera = Camera::new(WIDTH as i32, HEIGHT as i32);
+    let camera = Camera::new(CameraOptions {
+        screen_width: WIDTH as i32,
+        screen_height: HEIGHT as i32,
+        look_from: V3([-2.0, 2.0, 1.0]),
+        look_at: V3([0.0, 0.0, -1.0]),
+        vertical_field_of_view: PI / 6.0,
+        aperture: 0.5,
+        focus_distance: None,
+    });
 
     let red = Diffuse {
         color: V3([0.8, 0.5, 0.5]),
@@ -34,11 +43,11 @@ fn main() {
     let gray = Diffuse {
         color: V3([0.5, 0.5, 0.5]),
     };
-    let left = Reflective {
+    let mirror = Reflective {
         color: V3([0.8, 0.8, 0.8]),
         fuzz: 0.03,
     };
-    let right = Reflective {
+    let gold = Reflective {
         color: V3([0.8, 0.6, 0.2]),
         fuzz: 0.6,
     };
@@ -58,17 +67,17 @@ fn main() {
         Box::new(Sphere {
             center: V3([-1.0, 0.0, -1.0]),
             radius: 0.5,
-            material: &left,
+            material: &glass,
         }),
         Box::new(Sphere {
             center: V3([1.0, 0.0, -1.0]),
             radius: 0.5,
-            material: &right,
+            material: &gold,
         }),
         Box::new(Sphere {
             center: V3([0.0, 1.0, -5.0]),
             radius: 3.0,
-            material: &glass,
+            material: &mirror,
         }),
     ];
 

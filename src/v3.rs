@@ -85,6 +85,16 @@ impl V3 {
         self * (1.0 / self.length())
     }
 
+    pub fn cross(self, rhs: V3) -> V3 {
+        let V3([x1, y1, z1]) = self;
+        let V3([x2, y2, z2]) = rhs;
+        V3([
+            y1 * z2 - z1 * y2,
+            z1 * x2 - x1 * z2,
+            x1 * y2 - y1 * x2
+        ])
+    }
+
     pub fn map(self, f: fn(f64) -> f64) -> V3 {
         let V3([x, y, z]) = self;
         V3([f(x), f(y), f(z)])
