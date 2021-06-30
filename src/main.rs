@@ -1,3 +1,5 @@
+mod bounding_box;
+mod bounding_box_tree;
 mod camera;
 mod material;
 mod ray;
@@ -37,7 +39,7 @@ fn main() {
         aperture: 0.1,
         focus_distance: Some(10.0),
     });
-    let scene = make_scene();
+    let scene = bounding_box_tree::build(make_scene()).unwrap();
 
     let mut pixels_shared = Mutex::new(vec![V3::ZERO; WIDTH * HEIGHT]);
 

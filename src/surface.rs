@@ -1,3 +1,4 @@
+use crate::bounding_box::BoundingBox;
 use crate::material::Material;
 use crate::ray::Ray;
 use crate::ray_hit::RayHit;
@@ -11,6 +12,7 @@ pub struct RayHitMaterial<'m> {
 
 pub trait Surface: Send + Sync {
     fn hit(&self, ray: Ray, t_min: f64, t_max: f64) -> Option<RayHitMaterial>;
+    fn calculate_bounding_box(&self) -> BoundingBox;
 }
 
 impl<T: Surface + ?Sized> Surface for Vec<Box<T>> {
@@ -25,6 +27,16 @@ impl<T: Surface + ?Sized> Surface for Vec<Box<T>> {
             }
         }
         nearest_result
+    }
+
+    fn calculate_bounding_box(&self) -> BoundingBox {
+        self.iter()
+            .map(|surface| surface.calculate_bounding_box())
+            .reduce(|a, b| a.union(b))
+            .unwrap_or(BoundingBox {
+                minimum: V3::ZERO,
+                maximum: V3::ZERO,
+            })
     }
 }
 
@@ -71,6 +83,14 @@ impl Surface for Sphere {
             }
         } else {
             None
+        }
+    }
+
+    fn calculate_bounding_box(&self) -> BoundingBox {
+        let radius = V3([self.radius, self.radius, self.radius]);
+        BoundingBox {
+            minimum: self.center - radius,
+            maximum: self.center + radius,
         }
     }
 }

@@ -4,7 +4,7 @@ use crate::material::{Diffuse, Material, Reflective, Refractive};
 use crate::surface::{Sphere, Surface};
 use crate::v3::V3;
 
-pub fn make_scene() -> Box<dyn Surface> {
+pub fn make_scene() -> Vec<Box<dyn Surface>> {
     let mut surfaces: Vec<Box<dyn Surface>> = Vec::new();
     let mut rng = thread_rng();
 
@@ -71,5 +71,5 @@ pub fn make_scene() -> Box<dyn Surface> {
         }),
     }));
 
-    Box::new(surfaces)
+    surfaces
 }
