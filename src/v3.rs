@@ -95,7 +95,7 @@ impl V3 {
         ])
     }
 
-    pub fn map(self, f: fn(f64) -> f64) -> V3 {
+    pub fn map<F>(self, f: F) -> V3 where F: Fn(f64) -> f64 {
         let V3([x, y, z]) = self;
         V3([f(x), f(y), f(z)])
     }

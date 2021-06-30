@@ -1,10 +1,18 @@
+use std::f64::consts::PI;
+
 use rand::{thread_rng, Rng};
 
+use crate::camera::{Camera, CameraOptions};
 use crate::material::{Diffuse, Material, Reflective, Refractive};
 use crate::surface::{Sphere, Surface};
 use crate::v3::V3;
 
-pub fn make_scene() -> Vec<Box<dyn Surface>> {
+pub struct Scene {
+    pub camera: Camera,
+    pub surfaces: Vec<Box<dyn Surface>>,
+}
+
+pub fn make_scene() -> Scene {
     let mut surfaces: Vec<Box<dyn Surface>> = Vec::new();
     let mut rng = thread_rng();
 
@@ -71,5 +79,13 @@ pub fn make_scene() -> Vec<Box<dyn Surface>> {
         }),
     }));
 
-    surfaces
+    let camera = Camera::new(CameraOptions {
+        look_from: V3([13.0, 2.0, 3.0]),
+        look_at: V3([0.0, 0.0, 0.0]),
+        vertical_field_of_view: PI / 6.0,
+        aperture: 0.2,
+        focus_distance: Some(10.0),
+    });
+
+    Scene { camera, surfaces }
 }
